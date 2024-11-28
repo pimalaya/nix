@@ -73,7 +73,8 @@ rec {
     }:
 
     let
-      inherit (pkgs) binutils buildPlatform hostPlatform lib stdenv;
+      inherit (pkgs) binutils lib stdenv;
+      inherit (crossPkgs) buildPlatform hostPlatform;
       inherit (lib) getExe' importTOML optional;
       inherit (hostPlatform) isWindows;
 
