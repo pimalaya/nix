@@ -129,17 +129,17 @@ rec {
 
   # make flake outputs
   mkFlakeOutputs =
-    { self
-    , nixpkgs ? <nixpkgs>
-    , lib ? import <nixpkgs/lib>
-    , fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/main.tar.gz") { }
-    , mkShell
-    , mkDefault
-    }:
+    { self, nixpkgs, fenix, ... } @ inputs:
+    { shell, default }:
 
     let
-      eachSystem = lib.genAttrs (lib.attrNames crossSystems);
+      inherit (nixpkgs) lib;
 
+      pimalaya = import inputs.pimalaya;
+      mkShell = args: import shell ({ inherit pimalaya; } // args);
+      mkDefault = args: import default ({ inherit pimalaya; } // args);
+
+      eachSystem = lib.genAttrs (lib.attrNames crossSystems);
       withGitEnvs = package: package.overrideAttrs (drv: {
         GIT_REV = drv.GIT_REV or self.rev or self.dirtyRev or "unknown";
         GIT_DESCRIBE = drv.GIT_DESCRIBE or "nix-flake-" + self.lastModifiedDate;
