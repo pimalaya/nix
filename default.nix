@@ -1,6 +1,8 @@
 let
   inherit (builtins) isString;
+in
 
+rec {
   # v1.82.0
   rustToolchainFileSha256 = "yMuSb5eQPO/bHv+Bcf/US8LVMbf/G/0MSfiPwBhiPpk=";
 
@@ -23,12 +25,8 @@ let
       "x86_64-w64-mingw32"
     ];
   };
-in
 
-{
-  inherit crossSystems;
-
-  # shell.nix maker
+  # make shell.nix
   mkShell =
     { nixpkgs ? <nixpkgs>
     , system ? builtins.currentSystem
@@ -55,7 +53,8 @@ in
       buildInputs = [ rust ] ++ extraBuildInputs';
     };
 
-  # default.nix maker
+
+  # make default.nix
   mkDefault =
     { nixpkgs ? <nixpkgs>
     , system ? builtins.currentSystem
@@ -127,4 +126,53 @@ in
         allowBuiltinFetchGit = true;
       };
     });
+
+  # make flake outputs
+  mkFlakeOutputs =
+    { self
+    , nixpkgs ? <nixpkgs>
+    , lib ? import <nixpkgs/lib>
+    , fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/main.tar.gz") { }
+    , mkShell
+    , mkDefault
+    }:
+
+    let
+      eachSystem = lib.genAttrs (lib.attrNames crossSystems);
+
+      withGitEnvs = package: package.overrideAttrs (drv: {
+        GIT_REV = drv.GIT_REV or self.rev or self.dirtyRev or "unknown";
+        GIT_DESCRIBE = drv.GIT_DESCRIBE or "nix-flake-" + self.lastModifiedDate;
+      });
+
+      mkDevShell = system: {
+        default = mkShell {
+          inherit nixpkgs system;
+          fenix = fenix.packages.${system};
+        };
+      };
+
+      mkPackages = system: mkCrossPackages system // {
+        default = withGitEnvs (mkDefault {
+          inherit nixpkgs system;
+          fenix = fenix.packages.${system};
+        });
+      };
+
+      mkCrossPackages = system:
+        lib.attrsets.mergeAttrsList (map (mkCrossPackage system) crossSystems.${system});
+
+      mkCrossPackage = system: target:
+        let
+          crossSystem = { config = target; isStatic = true; };
+          crossPkgs = import nixpkgs { inherit system crossSystem; };
+          crossPkg = mkDefault { inherit nixpkgs system crossPkgs; fenix = fenix.packages.${system}; };
+        in
+        { "cross-${crossPkgs.hostPlatform.system}" = withGitEnvs crossPkg; };
+    in
+
+    {
+      devShells = eachSystem mkDevShell;
+      packages = eachSystem mkPackages;
+    };
 }

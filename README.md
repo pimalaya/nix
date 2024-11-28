@@ -1,5 +1,7 @@
 # Pimalaya Nix
 
+Shared Nix code across Pimalaya projects.
+
 *Work in progress…*
 
 ## Sponsoring
