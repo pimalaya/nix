@@ -1,0 +1,33 @@
+name: tests
+
+on:
+  push:
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - macos-13
+          - macos-14
+          - ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          # TODO: nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=https://github.com/soywod/nixpkgs/archive/master.tar.gz
+          enable_kvm: true
+      - name: Cache Nix store
+        uses: cachix/cachix-action@v15
+        with:
+          name: soywod
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
+      - name: Test default.nix
+        run: nix-build
+      - name: Test shell.nix
+        run: nix-shell
