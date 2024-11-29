@@ -37,7 +37,8 @@ rec {
     }:
 
     let
-      inherit (pkgs.lib) optionals attrVals splitString;
+      inherit (pkgs) lib pkg-config;
+      inherit (lib) optionals attrVals splitString;
 
       rust = fenix.fromToolchainFile {
         file = rustToolchainFile;
@@ -50,9 +51,9 @@ rec {
     in
 
     pkgs.mkShell {
+      nativeBuildInputs = [ pkg-config ];
       buildInputs = [ rust ] ++ extraBuildInputs';
     };
-
 
   # make default.nix
   mkDefault =
