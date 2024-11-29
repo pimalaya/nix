@@ -51,8 +51,7 @@ rec {
     in
 
     pkgs.mkShell {
-      nativeBuildInputs = [ pkg-config ];
-      buildInputs = [ rust ] ++ extraBuildInputs';
+      buildInputs = [ pkg-config rust ] ++ extraBuildInputs';
     };
 
   # make default.nix
