@@ -175,6 +175,6 @@ rec {
 
     {
       devShells = optionalAttrs (shell != null) (eachSystem mkDevShell);
-      packages = optionalAttrs (shell != null) (eachSystem mkPackages);
+      packages = optionalAttrs (default != null) (eachSystem mkPackages);
     };
 }
