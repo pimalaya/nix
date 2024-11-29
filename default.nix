@@ -131,10 +131,11 @@ rec {
   # make flake outputs
   mkFlakeOutputs =
     { self, nixpkgs, fenix, ... } @ inputs:
-    { shell, default }:
+    { shell ? null, default ? null }:
 
     let
       inherit (nixpkgs) lib;
+      inherit (lib) optionalAttrs;
 
       pimalaya = import inputs.pimalaya;
       mkShell = args: import shell ({ inherit pimalaya; } // args);
@@ -173,7 +174,7 @@ rec {
     in
 
     {
-      devShells = eachSystem mkDevShell;
-      packages = eachSystem mkPackages;
+      devShells = optionalAttrs (shell != null) (eachSystem mkDevShell);
+      packages = optionalAttrs (shell != null) (eachSystem mkPackages);
     };
 }
