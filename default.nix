@@ -1,7 +1,3 @@
-let
-  inherit (builtins) isString;
-in
-
 rec {
   # v1.82.0
   rustToolchainFileSha256 = "yMuSb5eQPO/bHv+Bcf/US8LVMbf/G/0MSfiPwBhiPpk=";
@@ -32,7 +28,8 @@ rec {
     , system ? builtins.currentSystem
     , pkgs ? import nixpkgs { inherit system; }
     , fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/main.tar.gz") { }
-    , extraBuildInputs ? null
+    , buildInputs ? [ ]
+    , extraBuildInputs ? ""
     , rustToolchainFile
     }:
 
@@ -46,13 +43,13 @@ rec {
       };
 
       extraBuildInputs' = optionals
-        (isString extraBuildInputs)
+        (extraBuildInputs != "")
         (attrVals (splitString "," extraBuildInputs) pkgs);
     in
 
     pkgs.mkShell {
       nativeBuildInputs = [ pkg-config ];
-      buildInputs = [ rust ] ++ extraBuildInputs';
+      buildInputs = [ rust ] ++ buildInputs ++ extraBuildInputs';
     };
 
   # make default.nix
