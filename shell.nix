@@ -2,7 +2,7 @@
 , system ? builtins.currentSystem
 , pkgs ? import nixpkgs { inherit system; }
 , languageServer ? "nixd"
-, codeFormatter ? "nixfmt-classic"
+, codeFormatter ? "nixfmt"
 }:
 
 pkgs.mkShell {
