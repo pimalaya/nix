@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+      os:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+      share:
+        default: false
+        type: boolean
+    secrets:
+      CACHIX_AUTH_TOKEN:
+        required: true
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          # TODO: until PR #358989 get merged
+          # nix_path: nixpkgs=channel:nixos-unstable
+          nix_path: nixpkgs=https://github.com/soywod/nixpkgs/archive/master.tar.gz
+          enable_kvm: true
+          extra_nix_config: experimental-features = nix-command flakes
+      - name: Cache Nix store
+        uses: cachix/cachix-action@v15
+        with:
+          name: soywod
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
+      - name: Build release
+        run: nix build .#cross-${{ inputs.target }}
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.project }}-${{ inputs.target }}
+          path: result/bin/${{ inputs.project }}*
+      - name: Upload share artifact
+        uses: actions/upload-artifact@v4
+        if: ${{ inputs.share }}
+        with:
+          name: share
+          path: result/share
+      - name: Move binary
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: cp result/bin/${{ inputs.project }}* .
+      - name: Move share folders
+        if: ${{ inputs.share && startsWith(github.ref, 'refs/tags/') }}
+        run: cp result/share . -R
+      - name: Download share artifact
+        uses: actions/download-artifact@v4
+        if: ${{ !inputs.share && startsWith(github.ref, 'refs/tags/') }}
+        with:
+          name: share
+          path: ./share
+      - name: Compress release
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: tar cvzf ${{ inputs.project }}.${{ inputs.target }}.tgz ${{ inputs.project }}* share
+      - name: Upload release
+        uses: softprops/action-gh-release@v2
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          files: ${{ inputs.project }}.${{ inputs.target }}.tgz

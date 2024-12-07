@@ -1,0 +1,50 @@
+name: Releases
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        required: true
+        type: string
+    secrets:
+      CACHIX_AUTH_TOKEN:
+        required: true
+
+jobs:
+  build-with-share:
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+    with:
+      project: ${{ inputs.project }}
+      os: ubuntu-latest
+      target: x86_64-linux
+      share: true
+  build:
+    uses: ./.github/workflows/release.yml
+    needs: build-with-share
+    secrets: inherit
+    with:
+      project: ${{ inputs.project }}
+      os: ${{ matrix.os }}
+      target: ${{ matrix.target }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-darwin
+            os: macos-14
+          - target: aarch64-linux
+            os: ubuntu-latest
+          - target: armv6l-linux
+            os: ubuntu-latest
+          - target: armv7l-linux
+            os: ubuntu-latest
+          - target: i686-linux
+            os: ubuntu-latest
+          # FIXME
+          # - target: i686-windows
+          #   os: ubuntu-latest
+          - target: x86_64-darwin
+            os: macos-13
+          - target: x86_64-windows
+            os: ubuntu-latest
