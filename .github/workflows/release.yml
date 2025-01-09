@@ -28,9 +28,7 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v27
         with:
-          # TODO: until PR #358989 get merged
-          # nix_path: nixpkgs=channel:nixos-unstable
-          nix_path: nixpkgs=https://github.com/soywod/nixpkgs/archive/master.tar.gz
+          nix_path: nixpkgs=https://github.com/nixos/nixpkgs/archive/staging-next.tar.gz
           enable_kvm: true
           extra_nix_config: experimental-features = nix-command flakes
       - name: Cache Nix store
