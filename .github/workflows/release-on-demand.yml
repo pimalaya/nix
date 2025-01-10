@@ -4,39 +4,15 @@ on:
   workflow_call:
     inputs:
       project:
-        description: Pimalaya project
-        type: choice
+        type: string
         required: true
-        default: himalaya
-        options:
-          - himalaya
-          - neverest
-          - mirador
       os:
-        description: Operating system
-        type: choice
+        type: string
         required: true
-        default: ubuntu-latest
-        options:
-          - ubuntu-latest
-          - macos-13
-          - macos-14
-          - windows-latest
       target:
-        description: Architecture
-        type: choice
+        type: string
         required: true
-        options:
-          - aarch64-darwin
-          - aarch64-linux
-          - armv6l-linux
-          - armv7l-linux
-          - i686-linux
-          - i686-windows
-          - x86_64-darwin
-          - x86_64-windows
       features:
-        description: Cargo features
         type: string
         required: true
     secrets:
