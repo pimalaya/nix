@@ -21,7 +21,7 @@ on:
 
 jobs:
   build:
-    name: ${{ inputs.project }}.${{ inputs.os }}.${{ inputs.target }} with ${{ inputs.features }}
+    name: ${{ inputs.project }}.${{ inputs.target }}+${{ inputs.features }}
     runs-on: ${{ inputs.os }}
     steps:
       - uses: actions/checkout@v4
