@@ -1,0 +1,82 @@
+name: Release on demand
+
+on:
+  workflow_call:
+    inputs:
+      project:
+        description: Pimalaya project
+        type: choice
+        required: true
+        default: himalaya
+        options:
+          - himalaya
+          - neverest
+          - mirador
+      os:
+        description: Operating system
+        type: choice
+        required: true
+        default: ubuntu-latest
+        options:
+          - ubuntu-latest
+          - macos-13
+          - macos-14
+          - windows-latest
+      target:
+        description: Architecture
+        type: choice
+        required: true
+        options:
+          - aarch64-darwin
+          - aarch64-linux
+          - armv6l-linux
+          - armv7l-linux
+          - i686-linux
+          - i686-windows
+          - x86_64-darwin
+          - x86_64-windows
+      features:
+        description: Cargo features
+        type: string
+        required: true
+    secrets:
+      CACHIX_AUTH_TOKEN:
+        required: true
+
+jobs:
+  build:
+    name: ${{ inputs.project }}.${{ inputs.os }}.${{ inputs.target }} with ${{ inputs.features }}
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+        with:
+          # FIXME: when #358989 lands on nixos-unstable
+          # https://nixpk.gs/pr-tracker.html?pr=358989
+          nix_path: nixpkgs=https://github.com/nixos/nixpkgs/archive/staging-next.tar.gz
+          enable_kvm: true
+      - run: nix-shell -p nix-info --run "nix-info -m"
+      - uses: cachix/cachix-action@v15
+        with:
+          name: soywod
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
+      - run: |
+          nix-build \
+            --arg fenix "import (fetchTarball \"https://github.com/soywod/fenix/archive/main.tar.gz\") { }" \
+            --argstr target ${{ inputs.target }} \
+            --arg defaultFeatures "false" \
+            --argstr features ${{ inputs.features }}
+          cp result/bin/${{ inputs.project }}* .
+          chmod u+w ${{ inputs.project }}*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.project }}-${{ inputs.target }}
+          path: ${{ inputs.project }}*
+      - run: |
+          cp -R result/share .
+          chmod -R u+w share
+      - uses: actions/upload-artifact@v4
+        with:
+          name: share
+          path: share
