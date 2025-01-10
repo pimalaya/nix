@@ -29,7 +29,7 @@ jobs:
         with:
           # FIXME: when #358989 lands on nixos-unstable
           # https://nixpk.gs/pr-tracker.html?pr=358989
-          nix_path: nixpkgs=channel:staging-next
+          nix_path: nixpkgs=https://github.com/nixos/nixpkgs/archive/staging-next.tar.gz
           enable_kvm: true
           extra_nix_config: experimental-features = nix-command flakes
       - run: nix-shell -p nix-info --run "nix-info -m"
