@@ -24,13 +24,14 @@ rec {
 
   # make shell.nix
   mkShell =
-    { nixpkgs ? <nixpkgs>
-    , system ? builtins.currentSystem
-    , pkgs ? import nixpkgs { inherit system; }
-    , fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/main.tar.gz") { }
-    , buildInputs ? [ ]
-    , extraBuildInputs ? ""
-    , rustToolchainFile
+    {
+      nixpkgs ? <nixpkgs>,
+      system ? builtins.currentSystem,
+      pkgs ? import nixpkgs { inherit system; },
+      fenix ? import (fetchTarball "https://github.com/soywod/fenix/archive/main.tar.gz") { },
+      buildInputs ? [ ],
+      extraBuildInputs ? "",
+      rustToolchainFile,
     }:
 
     let
@@ -42,11 +43,11 @@ rec {
         sha256 = rustToolchainFileSha256;
       };
 
-      extraBuildInputs' = optionals
-        (extraBuildInputs != "")
-        (attrVals (splitString "," extraBuildInputs) pkgs);
-    in
+      extraBuildInputs' = optionals (extraBuildInputs != "") (
+        attrVals (splitString "," extraBuildInputs) pkgs
+      );
 
+    in
     pkgs.mkShell {
       nativeBuildInputs = [ pkg-config ];
       buildInputs = [ rust ] ++ buildInputs ++ extraBuildInputs';
@@ -54,20 +55,36 @@ rec {
 
   # make default.nix
   mkDefault =
-    { nixpkgs ? <nixpkgs>
-    , system ? builtins.currentSystem
-    , pkgs ? import nixpkgs { inherit system; }
-    , crossPkgs ? import nixpkgs ({ inherit system; } // (if target == null then { } else { crossSystem = { inherit isStatic; config = target; }; }))
-    , fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/main.tar.gz") { }
-    , target ? null
-    , isStatic ? false
-    , defaultFeatures ? true
-    , features ? ""
-    , rustToolchainFile ? src + "/rust-toolchain.toml"
-    , cargoLockFile ? src + "/Cargo.lock"
-    , src
-    , mkPackage
-    , version
+    {
+      nixpkgs ? <nixpkgs>,
+      system ? builtins.currentSystem,
+      pkgs ? import nixpkgs { inherit system; },
+      crossPkgs ? import nixpkgs (
+        {
+          inherit system;
+        }
+        // (
+          if target == null then
+            { }
+          else
+            {
+              crossSystem = {
+                inherit isStatic;
+                config = target;
+              };
+            }
+        )
+      ),
+      fenix ? import (fetchTarball "https://github.com/soywod/fenix/archive/main.tar.gz") { },
+      target ? null,
+      isStatic ? false,
+      defaultFeatures ? true,
+      features ? "",
+      rustToolchainFile ? src + "/rust-toolchain.toml",
+      cargoLockFile ? src + "/Cargo.lock",
+      src,
+      mkPackage,
+      version,
     }:
 
     let
@@ -91,12 +108,17 @@ rec {
       rustToolchain =
         let
           name = (importTOML rustToolchainFile).toolchain.channel;
-          spec = { inherit name; sha256 = rustToolchainFileSha256; };
+          spec = {
+            inherit name;
+            sha256 = rustToolchainFileSha256;
+          };
           toolchain = fenix.fromToolchainName spec;
           target = if buildPlatform == hostPlatform then null else hostPlatform.rust.rustcTarget;
           crossToolchain = fenix.targets.${target}.fromToolchainName spec;
-          components = [ toolchain.rustc toolchain.cargo ]
-            ++ optional (target != null) crossToolchain.rust-std;
+          components = [
+            toolchain.rustc
+            toolchain.cargo
+          ] ++ optional (target != null) crossToolchain.rust-std;
         in
         fenix.combine components;
 
@@ -110,13 +132,12 @@ rec {
         inherit defaultFeatures features;
         pkgs = crossPkgs;
       };
-    in
 
+    in
     package.overrideAttrs (drv: {
       inherit version;
 
-      propagatedBuildInputs = (drv.propagatedBuildInputs or [ ])
-        ++ optional isWindows libgcc_eh;
+      propagatedBuildInputs = (drv.propagatedBuildInputs or [ ]) ++ optional isWindows libgcc_eh;
 
       src = pkgs.nix-gitignore.gitignoreSource [ ] src;
 
@@ -128,8 +149,16 @@ rec {
 
   # make flake outputs
   mkFlakeOutputs =
-    { self, nixpkgs, fenix, ... } @ inputs:
-    { shell ? null, default ? null }:
+    {
+      self,
+      nixpkgs,
+      fenix,
+      ...
+    }@inputs:
+    {
+      shell ? null,
+      default ? null,
+    }:
 
     let
       inherit (nixpkgs) lib;
@@ -140,10 +169,12 @@ rec {
       mkDefault = args: import default ({ inherit pimalaya; } // args);
 
       eachSystem = lib.genAttrs (lib.attrNames crossSystems);
-      withGitEnvs = package: package.overrideAttrs (drv: {
-        GIT_REV = drv.GIT_REV or self.rev or self.dirtyRev or "unknown";
-        GIT_DESCRIBE = drv.GIT_DESCRIBE or "nix-flake-" + self.lastModifiedDate;
-      });
+      withGitEnvs =
+        package:
+        package.overrideAttrs (drv: {
+          GIT_REV = drv.GIT_REV or self.rev or self.dirtyRev or "unknown";
+          GIT_DESCRIBE = drv.GIT_DESCRIBE or "nix-flake-" + self.lastModifiedDate;
+        });
 
       mkDevShell = system: {
         default = mkShell {
@@ -152,25 +183,37 @@ rec {
         };
       };
 
-      mkPackages = system: mkCrossPackages system // {
-        default = withGitEnvs (mkDefault {
-          inherit nixpkgs system;
-          fenix = fenix.packages.${system};
-        });
-      };
+      mkPackages =
+        system:
+        mkCrossPackages system
+        // {
+          default = withGitEnvs (mkDefault {
+            inherit nixpkgs system;
+            fenix = fenix.packages.${system};
+          });
+        };
 
-      mkCrossPackages = system:
-        lib.attrsets.mergeAttrsList (map (mkCrossPackage system) crossSystems.${system});
+      mkCrossPackages =
+        system: lib.attrsets.mergeAttrsList (map (mkCrossPackage system) crossSystems.${system});
 
-      mkCrossPackage = system: target:
+      mkCrossPackage =
+        system: target:
         let
-          crossSystem = { config = target; isStatic = true; };
+          crossSystem = {
+            config = target;
+            isStatic = true;
+          };
           crossPkgs = import nixpkgs { inherit system crossSystem; };
-          crossPkg = mkDefault { inherit nixpkgs system crossPkgs; fenix = fenix.packages.${system}; };
+          crossPkg = mkDefault {
+            inherit nixpkgs system crossPkgs;
+            fenix = fenix.packages.${system};
+          };
         in
-        { "cross-${crossPkgs.hostPlatform.system}" = withGitEnvs crossPkg; };
-    in
+        {
+          "cross-${crossPkgs.hostPlatform.system}" = withGitEnvs crossPkg;
+        };
 
+    in
     {
       devShells = optionalAttrs (shell != null) (eachSystem mkDevShell);
       packages = optionalAttrs (default != null) (eachSystem mkPackages);
