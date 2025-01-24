@@ -27,9 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v27
         with:
-          # FIXME: when #358989 lands on nixos-unstable
-          # https://nixpk.gs/pr-tracker.html?pr=358989
-          nix_path: nixpkgs=https://github.com/nixos/nixpkgs/archive/staging-next.tar.gz
+          nix_path: nixpkgs=https://github.com/nixos/nixpkgs/archive/nixpkgs-unstable.tar.gz
           enable_kvm: true
       - run: nix-shell -p nix-info --run "nix-info -m"
       - uses: cachix/cachix-action@v15
