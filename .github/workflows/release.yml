@@ -65,7 +65,7 @@ jobs:
       - run: tar cvzf ${{ inputs.project }}.${{ inputs.target }}.tgz ${{ inputs.project }}* share
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
       - run: zip -R ${{ inputs.project }}.${{ inputs.target }}.zip ${{ inputs.project }}* share
-        if: ${{ startsWith(inputs.target, 'x86_64-windows') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/') && endsWith(inputs.target, '-windows') }}
       - uses: softprops/action-gh-release@v2
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         with:
