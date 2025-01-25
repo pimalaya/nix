@@ -62,6 +62,7 @@ jobs:
         with:
           name: share
           path: share
+          fail_on_unmatched_files: false
       - run: tar cvzf ${{ inputs.project }}.${{ inputs.target }}.tgz ${{ inputs.project }}* share
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
       - run: zip -R ${{ inputs.project }}.${{ inputs.target }}.zip ${{ inputs.project }}* share
