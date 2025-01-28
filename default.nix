@@ -28,20 +28,23 @@ rec {
       nixpkgs ? <nixpkgs>,
       system ? builtins.currentSystem,
       pkgs ? import nixpkgs { inherit system; },
-      fenix ? import (fetchTarball "https://github.com/soywod/fenix/archive/main.tar.gz") { },
+      fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/monthly.tar.gz") { },
       buildInputs ? [ ],
       extraBuildInputs ? "",
-      rustToolchainFile,
     }:
 
     let
       inherit (pkgs) lib pkg-config;
       inherit (lib) optionals attrVals splitString;
+      inherit (fenix) rust-analyzer stable;
 
-      rust = fenix.fromToolchainFile {
-        file = rustToolchainFile;
-        sha256 = rustToolchainFileSha256;
-      };
+      rust = stable.withComponents [
+        "cargo"
+        "clippy"
+        "rust-src"
+        "rustc"
+        "rustfmt"
+      ];
 
       extraBuildInputs' = optionals (extraBuildInputs != "") (
         attrVals (splitString "," extraBuildInputs) pkgs
@@ -49,8 +52,16 @@ rec {
 
     in
     pkgs.mkShell {
-      nativeBuildInputs = [ pkg-config ];
-      buildInputs = [ rust ] ++ buildInputs ++ extraBuildInputs';
+      nativeBuildInputs = [
+        pkg-config
+      ];
+      buildInputs =
+        [
+          rust
+          rust-analyzer
+        ]
+        ++ buildInputs
+        ++ extraBuildInputs';
     };
 
   # make default.nix
@@ -75,7 +86,7 @@ rec {
             }
         )
       ),
-      fenix ? import (fetchTarball "https://github.com/soywod/fenix/archive/main.tar.gz") { },
+      fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/monthly.tar.gz") { },
       target ? null,
       isStatic ? false,
       defaultFeatures ? true,
