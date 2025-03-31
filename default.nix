@@ -91,7 +91,6 @@ rec {
       isStatic ? false,
       defaultFeatures ? true,
       features ? "",
-      rustToolchainFile ? src + "/rust-toolchain.toml",
       cargoLockFile ? src + "/Cargo.lock",
       src,
       mkPackage,
@@ -118,14 +117,9 @@ rec {
 
       rustToolchain =
         let
-          name = (importTOML rustToolchainFile).toolchain.channel;
-          spec = {
-            inherit name;
-            sha256 = rustToolchainFileSha256;
-          };
-          toolchain = fenix.fromToolchainName spec;
+          toolchain = fenix.stable;
           target = if buildPlatform == hostPlatform then null else hostPlatform.rust.rustcTarget;
-          crossToolchain = fenix.targets.${target}.fromToolchainName spec;
+          crossToolchain = fenix.targets.${target}.stable;
           components = [
             toolchain.rustc
             toolchain.cargo
