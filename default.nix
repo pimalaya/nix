@@ -36,11 +36,12 @@ rec {
     let
       inherit (pkgs) lib pkg-config;
       inherit (lib) optionals attrVals splitString;
-      inherit (fenix) rust-analyzer stable;
+      inherit (fenix) stable;
 
       rust = stable.withComponents [
         "cargo"
         "clippy"
+        "rust-analyzer"
         "rust-src"
         "rustc"
         "rustfmt"
@@ -58,7 +59,6 @@ rec {
       buildInputs =
         [
           rust
-          rust-analyzer
         ]
         ++ buildInputs
         ++ extraBuildInputs';
