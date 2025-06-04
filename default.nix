@@ -53,15 +53,8 @@ rec {
 
     in
     pkgs.mkShell {
-      nativeBuildInputs = [
-        pkg-config
-      ];
-      buildInputs =
-        [
-          rust
-        ]
-        ++ buildInputs
-        ++ extraBuildInputs';
+      nativeBuildInputs = [ pkg-config ];
+      buildInputs = [ rust ] ++ buildInputs ++ extraBuildInputs';
     };
 
   # make default.nix
@@ -103,8 +96,11 @@ rec {
       inherit (lib) getExe' importTOML optional;
       inherit (hostPlatform) isWindows;
 
+      # adds the "vendored" feature to the given features
+      withVendored = f: if f == "" then "vendored" else "vendored," + f;
+
       # HACK: https://github.com/NixOS/nixpkgs/issues/177129
-      # create an empty libgcc_eh for Windows compiler to be happy
+      # creates an empty libgcc_eh for Windows compiler to be happy
       libgcc_eh = stdenv.mkDerivation {
         pname = "empty-libgcc_eh";
         version = "0";
@@ -134,8 +130,9 @@ rec {
 
       package = mkPackage {
         inherit lib rustPlatform;
-        inherit defaultFeatures features;
+        inherit defaultFeatures;
         pkgs = crossPkgs;
+        features = if isStatic then (withVendored features) else features;
       };
 
     in
