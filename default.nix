@@ -96,9 +96,6 @@ rec {
       inherit (lib) getExe' importTOML optional;
       inherit (hostPlatform) isWindows;
 
-      # adds the "vendored" feature to the given features
-      withVendored = f: if f == "" then "vendored" else "vendored," + f;
-
       # HACK: https://github.com/NixOS/nixpkgs/issues/177129
       # creates an empty libgcc_eh for Windows compiler to be happy
       libgcc_eh = stdenv.mkDerivation {
@@ -130,9 +127,8 @@ rec {
 
       package = mkPackage {
         inherit lib rustPlatform;
-        inherit defaultFeatures;
+        inherit defaultFeatures features;
         pkgs = crossPkgs;
-        features = if isStatic then (withVendored features) else features;
       };
 
     in
