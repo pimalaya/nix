@@ -44,11 +44,7 @@ jobs:
           name: soywod
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
-      - run: |
-          nix-build \
-            --argstr target ${{ inputs.target }} \
-            --arg isStatic "true" \
-            --argstr features vendored
+      - run: nix build .#cross-${{ inputs.target }}
       - run: cp result/bin/${{ inputs.project }}* .
       - run: chmod u+w ${{ inputs.project }}*
       - uses: actions/upload-artifact@v4
