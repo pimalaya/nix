@@ -15,9 +15,12 @@ on:
       nixpkgs:
         type: string
         required: true
+      nix-info:
+        type: boolean
+        default: false
       features:
         type: string
-        required: true
+        default: false
     secrets:
       CACHIX_AUTH_TOKEN:
         required: true
@@ -33,6 +36,7 @@ jobs:
           nix_path: nixpkgs=https://github.com/nixos/nixpkgs/archive/${{ inputs.nixpkgs }}.tar.gz
           enable_kvm: true
       - run: nix-shell -p nix-info --run "nix-info -m"
+        if: ${{ inputs.nix-info }}
       - uses: cachix/cachix-action@v15
         with:
           name: soywod

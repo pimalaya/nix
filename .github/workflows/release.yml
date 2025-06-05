@@ -6,15 +6,18 @@ on:
       project:
         type: string
         required: true
-      nixpkgs:
-        type: string
-        default: nixpkgs-unstable
       os:
         type: string
         required: true
       target:
         type: string
         required: true
+      nixpkgs:
+        type: string
+        default: nixpkgs-unstable
+      nix-info:
+        type: boolean
+        default: false
       share:
         type: boolean
         default: false
@@ -39,6 +42,7 @@ jobs:
           enable_kvm: true
           extra_nix_config: experimental-features = nix-command flakes
       - run: nix-shell -p nix-info --run "nix-info -m"
+        if: ${{ inputs.nix-info }}
       - uses: cachix/cachix-action@v15
         with:
           name: soywod
