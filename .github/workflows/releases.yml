@@ -49,9 +49,8 @@ jobs:
             os: ubuntu-24.04
           - target: i686-linux
             os: ubuntu-24.04
-          # FIXME
-          # - target: i686-windows
-          #   os: ubuntu-24.04
+          - target: i686-windows
+            os: ubuntu-24.04
           - target: x86_64-darwin
             os: macos-13
           - target: x86_64-windows
