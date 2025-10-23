@@ -116,7 +116,8 @@ rec {
           components = [
             toolchain.rustc
             toolchain.cargo
-          ] ++ optional (target != null) crossToolchain.rust-std;
+          ]
+          ++ optional (target != null) crossToolchain.rust-std;
         in
         fenix.combine components;
 
@@ -163,8 +164,8 @@ rec {
       inherit (lib) optionalAttrs;
 
       pimalaya = import inputs.pimalaya;
-      mkShell = args: import shell ({ inherit pimalaya; } // args);
-      mkDefault = args: import default ({ inherit pimalaya; } // args);
+      mkShell = args: import shell ({ inherit pimalaya nixpkgs; } // args);
+      mkDefault = args: import default ({ inherit pimalaya nixpkgs; } // args);
 
       eachSystem = lib.genAttrs (lib.attrNames crossSystems);
       withGitEnvs =
