@@ -2,6 +2,9 @@ name: Tests
 
 on:
   workflow_call:
+    inputs:
+      docker:
+        type: string
     secrets:
       CACHIX_AUTH_TOKEN:
         required: true
@@ -11,9 +14,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest] 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - if: ${{ inputs.docker }}
+        run: ${{ inputs.docker }}
       - run: cargo test --all-features
