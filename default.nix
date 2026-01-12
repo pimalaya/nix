@@ -129,7 +129,7 @@ rec {
       package = mkPackage {
         inherit lib rustPlatform;
         inherit defaultFeatures features;
-        inherit pkgs crossPkgs;
+        pkgs = crossPkgs;
       };
 
     in
