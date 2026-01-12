@@ -130,6 +130,7 @@ rec {
         inherit lib rustPlatform;
         inherit defaultFeatures features;
         pkgs = crossPkgs;
+        buildPackages = pkgs.buildPackages;
       };
 
     in
