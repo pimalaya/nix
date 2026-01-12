@@ -126,9 +126,11 @@ rec {
         cargo = rustToolchain;
       };
 
-      package = crossPkgs.callPackage mkPackage {
+      package = mkPackage {
+        inherit lib rustPlatform;
         inherit defaultFeatures features;
-        buildPackages = pkgs;
+        pkgs = crossPkgs;
+        buildPackages = pkgs.buildPackages;
       };
 
     in
