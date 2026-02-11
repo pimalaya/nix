@@ -82,6 +82,6 @@ jobs:
       - if: ${{ inputs.publish && startsWith(github.ref, 'refs/tags/') }}
         run: |
           git clean -fd
-          nix develop --impure --ignore-env -k CARGO_REGISTRY_TOKEN -c cargo publish --no-verify
+          nix develop --ignore-env -k CARGO_REGISTRY_TOKEN -c cargo publish --no-verify
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
