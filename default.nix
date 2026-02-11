@@ -30,13 +30,15 @@ rec {
       pkgs ? import nixpkgs { inherit system; },
       fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/monthly.tar.gz") { },
       buildInputs ? [ ],
-      extraBuildInputs ? "",
     }:
 
     let
-      inherit (pkgs) lib pkg-config;
-      inherit (lib) optionals attrVals splitString;
       inherit (fenix) stable;
+      inherit (pkgs)
+        pkg-config
+        nixd
+        nixfmt
+        ;
 
       rust = stable.withComponents [
         "cargo"
@@ -47,14 +49,14 @@ rec {
         "rustfmt"
       ];
 
-      extraBuildInputs' = optionals (extraBuildInputs != "") (
-        attrVals (splitString "," extraBuildInputs) pkgs
-      );
-
     in
     pkgs.mkShell {
       nativeBuildInputs = [ pkg-config ];
-      buildInputs = [ rust ] ++ buildInputs ++ extraBuildInputs';
+      buildInputs = buildInputs ++ [
+        nixd
+        nixfmt
+        rust
+      ];
     };
 
   # make default.nix
