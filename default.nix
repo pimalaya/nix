@@ -29,16 +29,11 @@ rec {
       system ? builtins.currentSystem,
       pkgs ? import nixpkgs { inherit system; },
       fenix ? import (fetchTarball "https://github.com/nix-community/fenix/archive/monthly.tar.gz") { },
-      buildInputs ? [ ],
     }:
 
     let
       inherit (fenix) stable;
-      inherit (pkgs)
-        pkg-config
-        nixd
-        nixfmt-classic
-        ;
+      inherit (pkgs) pkg-config nixd nixfmt-rfc-style;
 
       rust = stable.withComponents [
         "cargo"
@@ -52,9 +47,9 @@ rec {
     in
     pkgs.mkShell {
       nativeBuildInputs = [ pkg-config ];
-      buildInputs = buildInputs ++ [
+      buildInputs = [
         nixd
-        nixfmt-classic
+        nixfmt-rfc-style
         rust
       ];
     };
