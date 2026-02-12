@@ -37,7 +37,7 @@ rec {
       inherit (pkgs)
         pkg-config
         nixd
-        nixfmt
+        nixfmt-classic
         ;
 
       rust = stable.withComponents [
@@ -54,7 +54,7 @@ rec {
       nativeBuildInputs = [ pkg-config ];
       buildInputs = buildInputs ++ [
         nixd
-        nixfmt
+        nixfmt-classic
         rust
       ];
     };
