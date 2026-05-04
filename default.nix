@@ -1,7 +1,4 @@
 rec {
-  # v1.82.0
-  rustToolchainFileSha256 = "yMuSb5eQPO/bHv+Bcf/US8LVMbf/G/0MSfiPwBhiPpk=";
-
   crossSystems = {
     aarch64-darwin = [
       "aarch64-apple-darwin"
@@ -196,11 +193,33 @@ rec {
       mkCrossPackage =
         system: target:
         let
-          crossSystem = {
-            config = target;
-            isStatic = true;
-          };
-          crossPkgs = import nixpkgs { inherit system crossSystem; };
+          # When `target` elaborates to the same platform as the build
+          # (e.g. aarch64-darwin -> aarch64-apple-darwin), keep things native:
+          # setting crossSystem here would flip nixpkgs into cross-compile mode
+          # (prefixed compilers, autotools cross_compiling=yes) and
+          # isStatic=true would pull in pkgsStatic, which on Darwin
+          # source-builds tools like atf whose configure scripts cannot run
+          # probe binaries under cross semantics.
+          #
+          # Compare the full `parsed` record, not `.system`: the short form is
+          # libc-agnostic so it cannot distinguish e.g.  x86_64-linux-gnu from
+          # x86_64-linux-musl, both of which share `.system = "x86_64-linux"`
+          # but are genuinely different cross targets.
+          isSelfCross =
+            (nixpkgs.lib.systems.elaborate { inherit system; }).parsed
+            == (nixpkgs.lib.systems.elaborate { config = target; }).parsed;
+
+          crossPkgs =
+            if isSelfCross then
+              import nixpkgs { inherit system; }
+            else
+              import nixpkgs {
+                inherit system;
+                crossSystem = {
+                  config = target;
+                  isStatic = true;
+                };
+              };
           crossPkg = mkDefault {
             inherit nixpkgs system crossPkgs;
             fenix = fenix.packages.${system};
