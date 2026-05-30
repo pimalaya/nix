@@ -86,7 +86,7 @@ rec {
 
     let
       inherit (pkgs) binutils lib stdenv;
-      inherit (crossPkgs) buildPlatform hostPlatform;
+      inherit (crossPkgs.stdenv) buildPlatform hostPlatform;
       inherit (lib) getExe' importTOML optional;
       inherit (hostPlatform) isWindows;
 
@@ -226,7 +226,7 @@ rec {
           };
         in
         {
-          "cross-${crossPkgs.hostPlatform.system}" = withGitEnvs crossPkg;
+          "cross-${crossPkgs.stdenv.hostPlatform.system}" = withGitEnvs crossPkg;
         };
 
     in
