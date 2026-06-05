@@ -131,6 +131,11 @@ rec {
     package.overrideAttrs (drv: {
       inherit version;
 
+      # HACK: nixpkgs libiconv setup-hook injects -liconv into NIX_LDFLAGS on
+      # Darwin, leaving an LC_LOAD_DYLIB pointing at /nix/store in every binary
+      # even when no libiconv symbol is referenced.
+      dontAddExtraLibs = true;
+
       propagatedBuildInputs = (drv.propagatedBuildInputs or [ ]) ++ optional isWindows libgcc_eh;
 
       src = pkgs.nix-gitignore.gitignoreSource [ ] src;
