@@ -49,6 +49,23 @@ jobs:
       - run: nix build .#cross-${{ inputs.target }} --no-write-lock-file
       - run: cp result/bin/${{ inputs.project }}* .
       - run: chmod u+w ${{ inputs.project }}*
+      - if: ${{ endsWith(inputs.target, '-darwin') }}
+        run: |
+          # Rewrite Nix store library paths to system paths so the
+          # binary can run on vanilla macOS without Nix installed.
+          # See: https://github.com/pimalaya/himalaya/issues/694
+          for f in ${{ inputs.project }}*; do
+            otool -L "$f" | grep -o '/nix/store/[^ ]*' | while read -r nix_path; do
+              lib="$(basename "$nix_path")"
+              target="/usr/lib/$lib"
+              if [ -f "$target" ]; then
+                echo "  $nix_path → $target"
+                install_name_tool -change "$nix_path" "$target" "$f"
+              else
+                echo "  WARNING: no system equivalent for $nix_path ($lib not in /usr/lib/)"
+              fi
+            done
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.project }}-${{ inputs.target }}
