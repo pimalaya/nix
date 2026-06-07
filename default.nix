@@ -87,8 +87,13 @@ rec {
     let
       inherit (pkgs) binutils lib stdenv;
       inherit (crossPkgs.stdenv) buildPlatform hostPlatform;
-      inherit (lib) getExe' importTOML optional;
-      inherit (hostPlatform) isWindows;
+      inherit (lib)
+        getExe'
+        importTOML
+        optional
+        optionalString
+        ;
+      inherit (hostPlatform) isDarwin isWindows;
 
       # HACK: https://github.com/NixOS/nixpkgs/issues/177129
       # creates an empty libgcc_eh for Windows compiler to be happy
@@ -131,10 +136,28 @@ rec {
     package.overrideAttrs (drv: {
       inherit version;
 
-      # HACK: nixpkgs libiconv setup-hook injects -liconv into NIX_LDFLAGS on
-      # Darwin, leaving an LC_LOAD_DYLIB pointing at /nix/store in every binary
-      # even when no libiconv symbol is referenced.
+      # HACK: stops the nixpkgs libiconv setup-hook appending -liconv to
+      # NIX_LDFLAGS. It does NOT stop Rust's libc crate emitting its own
+      # -liconv, which the linker still resolves to the store libiconv; that
+      # leftover store path is rewritten in postFixup below.
       dontAddExtraLibs = true;
+
+      # HACK: Rust's libc crate links -liconv, baked by the linker into an
+      # LC_LOAD_DYLIB pointing at the store libiconv; the binary then fails to
+      # load on any Mac without that /nix/store path. nixpkgs libiconv is
+      # built ABI-compatible with Apple's, so rewrite the load command to the
+      # libiconv every macOS ships, then re-sign (install_name_tool voids the
+      # ad-hoc signature Apple Silicon requires at load time).
+      postFixup =
+        (drv.postFixup or "")
+        + optionalString isDarwin ''
+          for bin in "$out"/bin/*; do
+            for lib in $(otool -L "$bin" | grep -o '/nix/store/[^[:space:]]*libiconv[^[:space:]]*\.dylib' || true); do
+              install_name_tool -change "$lib" /usr/lib/libiconv.2.dylib "$bin"
+            done
+            codesign -f -s - "$bin"
+          done
+        '';
 
       propagatedBuildInputs = (drv.propagatedBuildInputs or [ ]) ++ optional isWindows libgcc_eh;
 
