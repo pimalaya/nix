@@ -159,6 +159,10 @@ rec {
           done
         '';
 
+      # sigtool provides the codesign the re-sign in postFixup calls; the
+      # stdenv does not put a bare `codesign` on PATH.
+      nativeBuildInputs = (drv.nativeBuildInputs or [ ]) ++ optional isDarwin crossPkgs.darwin.sigtool;
+
       propagatedBuildInputs = (drv.propagatedBuildInputs or [ ]) ++ optional isWindows libgcc_eh;
 
       src = pkgs.nix-gitignore.gitignoreSource [ ] src;
