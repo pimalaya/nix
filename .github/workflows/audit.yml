@@ -19,4 +19,5 @@ jobs:
           name: soywod
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
+      - uses: Swatinem/rust-cache@v2
       - run: nix develop -c cargo-deny check

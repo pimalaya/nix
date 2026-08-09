@@ -41,6 +41,7 @@ jobs:
           name: soywod
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
+      - uses: Swatinem/rust-cache@v2
       - run: |
           nix-build \
             --arg fenix "import (fetchTarball \"https://github.com/soywod/fenix/archive/main.tar.gz\") { }" \

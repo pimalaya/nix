@@ -46,6 +46,7 @@ jobs:
           name: soywod
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
+      - uses: Swatinem/rust-cache@v2
       - run: nix build .#cross-${{ inputs.target }} --no-write-lock-file
       - run: cp result/bin/${{ inputs.project }}* .
       - run: chmod u+w ${{ inputs.project }}*
