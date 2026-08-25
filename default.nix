@@ -195,11 +195,14 @@ rec {
       mkDefault = args: import default ({ inherit pimalaya nixpkgs; } // args);
 
       eachSystem = lib.genAttrs (lib.attrNames crossSystems);
+
       withGitEnvs =
         package:
         package.overrideAttrs (drv: {
-          GIT_REV = drv.GIT_REV or self.rev or self.dirtyRev or "unknown";
-          GIT_DESCRIBE = drv.GIT_DESCRIBE or "nix-flake-" + self.lastModifiedDate;
+          env = (drv.env or { }) // {
+            GIT_REV = drv.env.GIT_REV or self.rev or self.dirtyRev or "unknown";
+            GIT_DESCRIBE = drv.env.GIT_DESCRIBE or ("nix-flake-" + self.lastModifiedDate);
+          };
         });
 
       mkDevShell = system: {
