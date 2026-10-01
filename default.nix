@@ -88,14 +88,26 @@ rec {
       inherit (pkgs) binutils lib stdenv;
       inherit (crossPkgs.stdenv) buildPlatform hostPlatform;
       inherit (lib)
+        concatStringsSep
+        filter
         getExe'
         importTOML
         optional
+        optionals
         optionalString
+        remove
+        splitString
         ;
       inherit (hostPlatform) isDarwin isWindows;
 
-      # HACK: https://github.com/NixOS/nixpkgs/issues/177129
+      cargoDefaultFeatures = ((importTOML (src + "/Cargo.toml")).features or { }).default or [ ];
+
+      buildFeatures = concatStringsSep "," (
+        optionals defaultFeatures (remove "vendored" cargoDefaultFeatures)
+        ++ filter (feature: feature != "") (splitString "," features)
+      );
+
+      # HACK: https://github.com/nixos/nixpkgs/issues/177129
       # creates an empty libgcc_eh for Windows compiler to be happy
       libgcc_eh = stdenv.mkDerivation {
         pname = "empty-libgcc_eh";
@@ -127,7 +139,8 @@ rec {
 
       package = mkPackage {
         inherit lib rustPlatform;
-        inherit defaultFeatures features;
+        defaultFeatures = false;
+        features = buildFeatures;
         pkgs = crossPkgs;
         buildPackages = pkgs.buildPackages;
       };
