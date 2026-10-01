@@ -88,12 +88,15 @@ rec {
       inherit (pkgs) binutils lib stdenv;
       inherit (crossPkgs.stdenv) buildPlatform hostPlatform;
       inherit (lib)
+        any
         concatStringsSep
         filter
         getExe'
+        getName
         importTOML
         optional
         optionals
+        optionalAttrs
         optionalString
         remove
         splitString
@@ -146,45 +149,60 @@ rec {
       };
 
     in
-    package.overrideAttrs (drv: {
-      inherit version;
+    package.overrideAttrs (
+      drv:
+      let
+        linksSqlite = any (input: getName input == "sqlite") (drv.buildInputs or [ ]);
+      in
+      {
+        inherit version;
 
-      # HACK: stops the nixpkgs libiconv setup-hook appending -liconv to
-      # NIX_LDFLAGS. It does NOT stop Rust's libc crate emitting its own
-      # -liconv, which the linker still resolves to the store libiconv; that
-      # leftover store path is rewritten in postFixup below.
-      dontAddExtraLibs = true;
+        # HACK: stops the nixpkgs libiconv setup-hook appending -liconv to
+        # NIX_LDFLAGS. It does NOT stop Rust's libc crate emitting its own
+        # -liconv, which the linker still resolves to the store libiconv; that
+        # leftover store path is rewritten in postFixup below.
+        dontAddExtraLibs = true;
 
-      # HACK: Rust's libc crate links -liconv, baked by the linker into an
-      # LC_LOAD_DYLIB pointing at the store libiconv; the binary then fails to
-      # load on any Mac without that /nix/store path. nixpkgs libiconv is
-      # built ABI-compatible with Apple's, so rewrite the load command to the
-      # libiconv every macOS ships, then re-sign (install_name_tool voids the
-      # ad-hoc signature Apple Silicon requires at load time).
-      postFixup =
-        (drv.postFixup or "")
-        + optionalString isDarwin ''
-          for bin in "$out"/bin/*; do
-            for lib in $(otool -L "$bin" | grep -o '/nix/store/[^[:space:]]*libiconv[^[:space:]]*\.dylib' || true); do
-              install_name_tool -change "$lib" /usr/lib/libiconv.2.dylib "$bin"
+        # HACK: Rust's libc crate links -liconv, baked by the linker into an
+        # LC_LOAD_DYLIB pointing at the store libiconv; the binary then fails to
+        # load on any Mac without that /nix/store path. nixpkgs libiconv is
+        # built ABI-compatible with Apple's, so rewrite the load command to the
+        # libiconv every macOS ships, then re-sign (install_name_tool voids the
+        # ad-hoc signature Apple Silicon requires at load time).
+        postFixup =
+          (drv.postFixup or "")
+          + optionalString isDarwin ''
+            for bin in "$out"/bin/*; do
+              for lib in $(otool -L "$bin" | grep -o '/nix/store/[^[:space:]]*libiconv[^[:space:]]*\.dylib' || true); do
+                install_name_tool -change "$lib" /usr/lib/libiconv.2.dylib "$bin"
+              done
+              codesign -f -s - "$bin"
             done
-            codesign -f -s - "$bin"
-          done
-        '';
+          '';
 
-      # sigtool provides the codesign the re-sign in postFixup calls; the
-      # stdenv does not put a bare `codesign` on PATH.
-      nativeBuildInputs = (drv.nativeBuildInputs or [ ]) ++ optional isDarwin crossPkgs.darwin.sigtool;
+        # sigtool provides the codesign the re-sign in postFixup calls; the
+        # stdenv does not put a bare `codesign` on PATH.
+        nativeBuildInputs = (drv.nativeBuildInputs or [ ]) ++ optional isDarwin crossPkgs.darwin.sigtool;
 
-      propagatedBuildInputs = (drv.propagatedBuildInputs or [ ]) ++ optional isWindows libgcc_eh;
+        propagatedBuildInputs = (drv.propagatedBuildInputs or [ ]) ++ optional isWindows libgcc_eh;
 
-      src = pkgs.nix-gitignore.gitignoreSource [ ] src;
+        # NOTE: a Darwin build is native, never static, so a SQLite the package
+        # links would load from /nix/store on the user's Mac. libsqlite3-sys
+        # links the store's archive instead, on every platform alike, with the
+        # zlib its pkg-config entry names as private.
+        buildInputs =
+          (drv.buildInputs or [ ]) ++ optional linksSqlite (crossPkgs.zlib.static or crossPkgs.zlib);
 
-      cargoDeps = rustPlatform.importCargoLock {
-        lockFile = cargoLockFile;
-        allowBuiltinFetchGit = true;
-      };
-    });
+        env = (drv.env or { }) // optionalAttrs linksSqlite { SQLITE3_STATIC = "1"; };
+
+        src = pkgs.nix-gitignore.gitignoreSource [ ] src;
+
+        cargoDeps = rustPlatform.importCargoLock {
+          lockFile = cargoLockFile;
+          allowBuiltinFetchGit = true;
+        };
+      }
+    );
 
   # make flake outputs
   mkFlakeOutputs =
