@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `.override` to the packages `mkFlakeOutputs` exposes (`default` and `cross-*`), so a downstream flake can change `mkDefault` arguments such as `defaultFeatures` and `features`.
+
 ### Changed
 
 - Changed `mkDefault` to build a project's default cargo features without `vendored`, so native libraries come from Nix rather than from a source build.

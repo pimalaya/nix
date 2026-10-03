@@ -110,8 +110,8 @@ rec {
         ++ filter (feature: feature != "") (splitString "," features)
       );
 
-      # HACK: https://github.com/nixos/nixpkgs/issues/177129
-      # creates an empty libgcc_eh for Windows compiler to be happy
+      # HACK: empty libgcc_eh for the Windows compiler
+      # https://github.com/nixos/nixpkgs/issues/177129
       libgcc_eh = stdenv.mkDerivation {
         pname = "empty-libgcc_eh";
         version = "0";
@@ -157,18 +157,13 @@ rec {
       {
         inherit version;
 
-        # HACK: stops the nixpkgs libiconv setup-hook appending -liconv to
-        # NIX_LDFLAGS. It does NOT stop Rust's libc crate emitting its own
-        # -liconv, which the linker still resolves to the store libiconv; that
-        # leftover store path is rewritten in postFixup below.
+        # HACK: stops the libiconv setup-hook adding -liconv; Rust's libc
+        # crate still links it, rewritten in postFixup.
         dontAddExtraLibs = true;
 
-        # HACK: Rust's libc crate links -liconv, baked by the linker into an
-        # LC_LOAD_DYLIB pointing at the store libiconv; the binary then fails to
-        # load on any Mac without that /nix/store path. nixpkgs libiconv is
-        # built ABI-compatible with Apple's, so rewrite the load command to the
-        # libiconv every macOS ships, then re-sign (install_name_tool voids the
-        # ad-hoc signature Apple Silicon requires at load time).
+        # HACK: points the store libiconv at the ABI-compatible one macOS
+        # ships, so the binary loads without Nix, then re-signs (required by
+        # Apple Silicon, voided by install_name_tool).
         postFixup =
           (drv.postFixup or "")
           + optionalString isDarwin ''
@@ -180,16 +175,13 @@ rec {
             done
           '';
 
-        # sigtool provides the codesign the re-sign in postFixup calls; the
-        # stdenv does not put a bare `codesign` on PATH.
+        # NOTE: provides the `codesign` postFixup needs.
         nativeBuildInputs = (drv.nativeBuildInputs or [ ]) ++ optional isDarwin crossPkgs.darwin.sigtool;
 
         propagatedBuildInputs = (drv.propagatedBuildInputs or [ ]) ++ optional isWindows libgcc_eh;
 
-        # NOTE: a Darwin build is native, never static, so a SQLite the package
-        # links would load from /nix/store on the user's Mac. libsqlite3-sys
-        # links the store's archive instead, on every platform alike, with the
-        # zlib its pkg-config entry names as private.
+        # NOTE: links SQLite statically (with its private zlib), else Darwin
+        # native builds would load it from /nix/store.
         buildInputs =
           (drv.buildInputs or [ ]) ++ optional linksSqlite (crossPkgs.zlib.static or crossPkgs.zlib);
 
@@ -223,7 +215,7 @@ rec {
 
       pimalaya = import inputs.pimalaya;
       mkShell = args: import shell ({ inherit pimalaya nixpkgs; } // args);
-      mkDefault = args: import default ({ inherit pimalaya nixpkgs; } // args);
+      mkDefault = lib.makeOverridable (args: import default ({ inherit pimalaya nixpkgs; } // args));
 
       eachSystem = lib.genAttrs (lib.attrNames crossSystems);
 
@@ -259,18 +251,9 @@ rec {
       mkCrossPackage =
         system: target:
         let
-          # When `target` elaborates to the same platform as the build
-          # (e.g. aarch64-darwin -> aarch64-apple-darwin), keep things native:
-          # setting crossSystem here would flip nixpkgs into cross-compile mode
-          # (prefixed compilers, autotools cross_compiling=yes) and
-          # isStatic=true would pull in pkgsStatic, which on Darwin
-          # source-builds tools like atf whose configure scripts cannot run
-          # probe binaries under cross semantics.
-          #
-          # Compare the full `parsed` record, not `.system`: the short form is
-          # libc-agnostic so it cannot distinguish e.g.  x86_64-linux-gnu from
-          # x86_64-linux-musl, both of which share `.system = "x86_64-linux"`
-          # but are genuinely different cross targets.
+          # NOTE: builds natively when target is the build platform, cross
+          # mode breaking Darwin builds. Compares `parsed` since `.system`
+          # ignores the libc (gnu vs musl).
           isSelfCross =
             (nixpkgs.lib.systems.elaborate { inherit system; }).parsed
             == (nixpkgs.lib.systems.elaborate { config = target; }).parsed;
