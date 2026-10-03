@@ -219,6 +219,10 @@ rec {
 
       eachSystem = lib.genAttrs (lib.attrNames crossSystems);
 
+      # NOTE: fenix's flake dropped x86_64-darwin, its toolchains did not.
+      fenixFor =
+        system: fenix.packages.${system} or (import fenix { pkgs = nixpkgs.legacyPackages.${system}; });
+
       withGitEnvs =
         package:
         package.overrideAttrs (drv: {
@@ -231,7 +235,7 @@ rec {
       mkDevShell = system: {
         default = mkShell {
           inherit nixpkgs system;
-          fenix = fenix.packages.${system};
+          fenix = fenixFor system;
         };
       };
 
@@ -241,7 +245,7 @@ rec {
         // {
           default = withGitEnvs (mkDefault {
             inherit nixpkgs system;
-            fenix = fenix.packages.${system};
+            fenix = fenixFor system;
           });
         };
 
@@ -271,7 +275,7 @@ rec {
               };
           crossPkg = mkDefault {
             inherit nixpkgs system crossPkgs;
-            fenix = fenix.packages.${system};
+            fenix = fenixFor system;
           };
         in
         {

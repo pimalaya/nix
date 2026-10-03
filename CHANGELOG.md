@@ -19,3 +19,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed git metadata not reaching build scripts: `GIT_REV` and `GIT_DESCRIBE` are now set through `env`, which structuredAttrs exports, instead of plain attributes, which it only declares.
 - Fixed Darwin binaries loading SQLite from `/nix/store`, which no Mac without Nix has: a package linking SQLite now links the store's static archive (`SQLITE3_STATIC`) on every platform.
+- Fixed `x86_64-darwin` outputs failing to evaluate since fenix's flake dropped that system: `mkFlakeOutputs` now imports fenix directly there.
