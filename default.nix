@@ -30,7 +30,7 @@ rec {
 
     let
       inherit (fenix) stable;
-      inherit (pkgs) pkg-config nixd nixfmt-rfc-style;
+      inherit (pkgs) pkg-config nixd nixfmt;
 
       rust = stable.withComponents [
         "cargo"
@@ -46,7 +46,7 @@ rec {
       nativeBuildInputs = [ pkg-config ];
       buildInputs = [
         nixd
-        nixfmt-rfc-style
+        nixfmt
         rust
       ];
     };

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Changed the shell code formatter from `nixfmt-rfc-style` to `nixfmt`, its name since nixpkgs 25.11, which warns on the old one.
 - Changed `mkDefault` to build a project's default cargo features without `vendored`, so native libraries come from Nix rather than from a source build.
 
 ### Fixed
