@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added `.override` to the packages `mkFlakeOutputs` exposes (`default` and `cross-*`), so a downstream flake can change `mkDefault` arguments such as `defaultFeatures` and `features`.
+- Added a version check to the release workflow: a tag whose name, without its `v`, is not the version of the root manifest's package fails the publishing job before it builds, so no binary is uploaded and nothing is published to crates.io.
+- Added pre-release marking to the release workflow: a tag holding `-` (such as `v1.0.0-rc.1`) makes a GitHub pre-release, never marked latest, so install scripts reading `releases/latest` keep the last stable release.
 
 ### Changed
 
