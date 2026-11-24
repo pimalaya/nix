@@ -41,11 +41,17 @@ jobs:
           extra_nix_config: experimental-features = nix-command flakes
       - run: nix-shell -p nix-info --run "nix-info -m"
         if: ${{ inputs.nix-info }}
+      # NOTE: the action's own installer evaluates nixpkgs-unstable, which
+      # refuses x86_64-darwin since 26.11: cachix comes from the nixpkgs the
+      # project's flake locks instead, the one its build uses.
+      - name: Cachix from the project's nixpkgs
+        run: nix build --inputs-from . 'nixpkgs#cachix^bin' --out-link "$RUNNER_TEMP/cachix"
       - uses: cachix/cachix-action@v16
         with:
           name: soywod
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
+          cachixBin: ${{ runner.temp }}/cachix-bin/bin/cachix
       # NOTE: the publishing job runs first and every other job needs it, so
       # a tag naming another version stops the release before any build,
       # upload or publish. The package is the one `cargo publish` takes, the

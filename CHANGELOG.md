@@ -24,3 +24,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Darwin binaries loading SQLite from `/nix/store`, which no Mac without Nix has: a package linking SQLite now links the store's static archive (`SQLITE3_STATIC`) on every platform.
 - Fixed `x86_64-darwin` outputs failing to evaluate since fenix's flake dropped that system: `mkFlakeOutputs` now imports fenix directly there.
 - Fixed the Windows release zip holding the binary twice and the tgz, but no share directory: it now holds what the tgz does.
+- Fixed the x86_64-darwin release job failing before its build: `cachix/cachix-action` installed cachix from nixpkgs-unstable, which refuses x86_64-darwin since 26.11. The release workflow now builds cachix from the nixpkgs the project's flake locks and hands it to the action.
